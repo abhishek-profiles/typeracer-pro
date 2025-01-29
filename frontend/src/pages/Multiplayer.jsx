@@ -346,6 +346,12 @@ export default function Multiplayer() {
       setError('Cannot start game. Please try rejoining the room.');
       return;
     }
+    if (participants.length < 2) {
+      setError('At least one other player needs to join before starting the game.');
+      return;
+    }
+    setError('');
+    setGameStatus('countdown');
     console.log('Attempting to start game for room:', room);
     socket.emit('startGame', room);
   };
@@ -449,7 +455,7 @@ export default function Multiplayer() {
                 ))}
               </div>
 
-              {gameStatus === 'waiting' && participants.length >= 2 && participants[0]?.socketId === socket?.id && (
+              {gameStatus === 'waiting' && participants.length >= 1 && participants[0]?.socketId === socket?.id && (
                 <div className="text-center">
                   <button onClick={readyToStart} className="btn-primary">
                     Start Game
@@ -458,7 +464,8 @@ export default function Multiplayer() {
               )}
 
               {gameStatus === 'countdown' && (
-                <div className="text-center">
+                <div className="text-center space-y-4">
+                  <p className="text-2xl text-gray-300">Get Ready!</p>
                   <p className="text-6xl font-bold text-blue-500">{countdown}</p>
                 </div>
               )}
@@ -466,14 +473,29 @@ export default function Multiplayer() {
               {(gameStatus === 'active' || gameStatus === 'completed') && (
                 <div className="space-y-6">
                   <div className="card">
-                    <p className="text-lg text-gray-300 mb-4 leading-relaxed">{text}</p>
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <p className="text-sm text-gray-400">Your Stats</p>
+                        <div className="flex gap-4 mt-1">
+                          <p className="text-blue-500">{wpm} WPM</p>
+                          <p className="text-green-500">{accuracy}% Accuracy</p>
+                          <p className="text-purple-500">{progress}% Complete</p>
+                        </div>
+                      </div>
+                      {gameStatus === 'completed' && (
+                        <div className="text-center">
+                          <p className="text-xl font-bold text-gradient">Race Complete!</p>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-lg text-gray-300 mb-4 leading-relaxed font-mono">{text}</p>
                   </div>
 
                   <textarea
                     value={input}
                     onChange={handleInputChange}
                     disabled={gameStatus === 'completed'}
-                    className="w-full h-32 bg-gray-800 text-white border border-gray-700 rounded-lg p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full h-32 bg-gray-800 text-white border border-gray-700 rounded-lg p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-lg"
                     placeholder="Start typing when the race begins..."
                   />
                 </div>

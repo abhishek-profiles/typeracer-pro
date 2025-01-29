@@ -372,16 +372,29 @@ io.on('connection', async (socket) => {
 
       // Start countdown
       let countdown = 3;
-      const timer = setInterval(() => {
-        if (countdown > 0) {
-          io.to(roomId).emit('countdown', countdown);
-          countdown--;
-        } else {
-          clearInterval(timer);
-          room.status = 'active';
-          room.startTime = new Date();
-          room.save();
-          io.to(roomId).emit('gameStart', { text: room.text });
+      const countdownInterval = setInterval(async () => {
+        io.to(roomId).emit('countdown', countdown);
+        countdown--;
+        if (countdown < 0) {
+          clearInterval(countdownInterval);
+          try {
+            const updatedRoom = await Room.findOneAndUpdate(
+              { roomId },
+              { 
+                $set: { 
+                  status: 'active',
+                  startTime: new Date()
+                }
+              },
+              { new: true }
+            );
+            if (updatedRoom) {
+              io.to(roomId).emit('gameStart', { text: updatedRoom.text });
+            }
+          } catch (error) {
+            console.error('Error starting game:', error);
+            socket.emit('roomError', { message: 'Failed to start game', code: 'START_GAME_ERROR' });
+          }
         }
       }, 1000);
     });

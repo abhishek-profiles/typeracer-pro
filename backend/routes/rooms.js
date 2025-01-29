@@ -12,10 +12,21 @@ router.post('/create', auth, async (req, res) => {
   try {
     const roomId = Math.random().toString(36).substring(2, 8);
     const roomCode = Math.floor(10000 + Math.random() * 90000).toString();
+    
+    // Get a random text for the room
+    const texts = [
+      "The quick brown fox jumps over the lazy dog and runs through the meadow.",
+      "To be or not to be, that is the question that Shakespeare posed in Hamlet.",
+      "All that glitters is not gold, but it sure does shine bright in the sunlight.",
+      "A journey of a thousand miles begins with a single step forward into the unknown.",
+      "Actions speak louder than words, so let your actions define who you are."
+    ];
+    const randomText = texts[Math.floor(Math.random() * texts.length)];
+    
     const room = new Room({
       roomId,
       roomCode,
-      text: req.body.text || 'Default typing text here',
+      text: randomText,
       maxParticipants: req.body.maxParticipants || 10
     });
     
