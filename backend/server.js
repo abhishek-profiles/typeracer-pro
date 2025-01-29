@@ -370,33 +370,41 @@ io.on('connection', async (socket) => {
         return;
       }
 
-      // Start countdown
+      // Start countdown with initial emit
       let countdown = 3;
-      const countdownInterval = setInterval(async () => {
-        io.to(roomId).emit('countdown', countdown);
+      io.to(roomId).emit('countdown', countdown);
+      
+      const countdownInterval = setInterval(() => {
         countdown--;
-        if (countdown < 0) {
+        if (countdown >= 0) {
+          io.to(roomId).emit('countdown', countdown);
+        } else {
           clearInterval(countdownInterval);
-          try {
-            const updatedRoom = await Room.findOneAndUpdate(
-              { roomId },
-              { 
-                $set: { 
-                  status: 'active',
-                  startTime: new Date()
-                }
-              },
-              { new: true }
-            );
-            if (updatedRoom) {
-              io.to(roomId).emit('gameStart', { text: updatedRoom.text });
-            }
-          } catch (error) {
-            console.error('Error starting game:', error);
-            socket.emit('roomError', { message: 'Failed to start game', code: 'START_GAME_ERROR' });
-          }
+          startGame();
         }
       }, 1000);
+
+      // Separate async function to handle game start
+      async function startGame() {
+        try {
+          const updatedRoom = await Room.findOneAndUpdate(
+            { roomId },
+            { 
+              $set: { 
+                status: 'active',
+                startTime: new Date()
+              }
+            },
+            { new: true }
+          );
+          if (updatedRoom) {
+            io.to(roomId).emit('gameStart', { text: updatedRoom.text });
+          }
+        } catch (error) {
+          console.error('Error starting game:', error);
+          socket.emit('roomError', { message: 'Failed to start game', code: 'START_GAME_ERROR' });
+        }
+      }
     });
 
     // Handle disconnect
