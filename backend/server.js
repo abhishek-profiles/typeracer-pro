@@ -313,11 +313,22 @@ io.on('connection', async (socket) => {
             }
           },
           { new: true }
-        );
+        ).populate('participants.userId');
 
         if (!updatedRoom) return;
 
-        socket.to(roomId).emit('userProgress', {
+        // Sort participants by progress, WPM, and accuracy
+        const sortedParticipants = updatedRoom.participants.sort((a, b) => {
+          const progressDiff = (b.progress || 0) - (a.progress || 0);
+          if (progressDiff !== 0) return progressDiff;
+          const wpmDiff = (b.wpm || 0) - (a.wpm || 0);
+          if (wpmDiff !== 0) return wpmDiff;
+          return (b.accuracy || 0) - (a.accuracy || 0);
+        });
+
+        // Broadcast updated participants list to all users in the room
+        io.to(roomId).emit('userProgress', {
+          participants: sortedParticipants,
           userId: socket.id,
           progress,
           wpm,
@@ -347,7 +358,7 @@ io.on('connection', async (socket) => {
           
           io.to(roomId).emit('gameEnd', {
             winner: socket.id,
-            finalScores: updatedRoom.participants
+            finalScores: sortedParticipants
           });
         }
       } catch (error) {

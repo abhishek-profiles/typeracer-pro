@@ -139,12 +139,26 @@ export default function Multiplayer() {
         setWPM(0);
         setAccuracy(100);
       },
-      userProgress: ({ userId, progress, wpm }) => {
-        setParticipants(prev =>
-          prev.map(p =>
-            p.socketId === userId ? { ...p, progress, wpm } : p
-          )
-        );
+      userProgress: ({ userId, progress, wpm, accuracy }) => {
+        setParticipants(prev => {
+          const updatedParticipants = prev.map(p => {
+            if (p.socketId === userId) {
+              return { ...p, progress: progress || 0, wpm: wpm || 0, accuracy: accuracy || 0 };
+            }
+            return p;
+          });
+          // Sort participants by progress and WPM
+          return updatedParticipants.sort((a, b) => {
+            // First sort by progress
+            const progressDiff = (b.progress || 0) - (a.progress || 0);
+            if (progressDiff !== 0) return progressDiff;
+            // If progress is equal, sort by WPM
+            const wpmDiff = (b.wpm || 0) - (a.wpm || 0);
+            if (wpmDiff !== 0) return wpmDiff;
+            // If WPM is equal, sort by accuracy
+            return (b.accuracy || 0) - (a.accuracy || 0);
+          });
+        });
       },
       gameEnd: ({ winner, finalScores }) => {
         setGameStatus('completed');
@@ -302,20 +316,23 @@ export default function Multiplayer() {
   const calculateWPM = useCallback(() => {
     if (!startTime) return 0;
     const timeElapsed = (Date.now() - startTime) / 1000 / 60;
-    const wordsTyped = input.trim().split(/\s+/).length;
-    return Math.round(wordsTyped / timeElapsed);
+    const wordsTyped = input.trim().split(/\s+/).filter(word => word.length > 0).length;
+    return Math.round(wordsTyped / timeElapsed || 0);
   }, [input, startTime]);
 
   const calculateAccuracy = useCallback(() => {
     const textWords = text.split(' ');
-    const inputWords = input.trim().split(' ');
-    let correctWords = 0;
+    const inputWords = input.trim().split(' ').filter(word => word.length > 0);
+    if (inputWords.length === 0) return 100;
 
+    let correctWords = 0;
     inputWords.forEach((word, index) => {
-      if (textWords[index] === word) correctWords++;
+      if (index < textWords.length && textWords[index] === word) {
+        correctWords++;
+      }
     });
 
-    return Math.round((correctWords / inputWords.length) * 100) || 100;
+    return Math.round((correctWords / inputWords.length) * 100);
   }, [text, input]);
 
   const handleInputChange = (e) => {
@@ -331,6 +348,24 @@ export default function Multiplayer() {
     setProgress(newProgress);
     setWPM(newWPM);
     setAccuracy(newAccuracy);
+
+    // Update local participant state immediately for smoother UI updates
+    setParticipants(prev => {
+      const updatedParticipants = prev.map(p => {
+        if (p.socketId === socket.id) {
+          return { ...p, progress: newProgress, wpm: newWPM, accuracy: newAccuracy };
+        }
+        return p;
+      });
+      // Sort participants by progress, WPM, and accuracy
+      return updatedParticipants.sort((a, b) => {
+        const progressDiff = (b.progress || 0) - (a.progress || 0);
+        if (progressDiff !== 0) return progressDiff;
+        const wpmDiff = (b.wpm || 0) - (a.wpm || 0);
+        if (wpmDiff !== 0) return wpmDiff;
+        return (b.accuracy || 0) - (a.accuracy || 0);
+      });
+    });
 
     socket.emit('typingProgress', {
       roomId: room,
@@ -358,8 +393,8 @@ export default function Multiplayer() {
 
   return (
     <div className="relative isolate pt-24">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl">
+      <div className="px-6 lg:px-8">
+        <div>
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold tracking-tight text-gradient mb-4">
               Multiplayer Race
@@ -426,34 +461,25 @@ export default function Multiplayer() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {participants.map((participant) => (
-                  <div key={participant.socketId} className="card hover:border-blue-500/50 transition-all">
-                    <div className="flex items-center gap-4">
-                      <UserIcon className="h-8 w-8 text-blue-500" />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-semibold text-lg">{participant.username}</p>
-
+              {gameStatus === 'waiting' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {participants.map((participant) => (
+                    <div key={participant.socketId} className="card hover:border-blue-500/50 transition-all">
+                      <div className="flex items-center gap-4">
+                        <UserIcon className={`h-8 w-8 ${participant.socketId === socket?.id ? 'text-yellow-500' : 'text-blue-500'}`} />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <p className="font-semibold text-lg">{participant.username}</p>
+                            {participant.socketId === socket?.id && (
+                              <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">You</span>
+                            )}
+                          </div>
                         </div>
-                        {(gameStatus === 'active' || gameStatus === 'completed') && (
-                          <>
-                            <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-                              <div
-                                className="bg-blue-500 h-2 rounded-full transition-all"
-                                style={{ width: `${participant.progress || 0}%` }}
-                              />
-                            </div>
-                            <p className="text-sm text-gray-400 mt-1">
-                              {participant.wpm || 0} WPM
-                            </p>
-                          </>
-                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               {gameStatus === 'waiting' && participants.length >= 1 && participants[0]?.socketId === socket?.id && (
                 <div className="text-center">
@@ -471,33 +497,116 @@ export default function Multiplayer() {
               )}
 
               {(gameStatus === 'active' || gameStatus === 'completed') && (
-                <div className="space-y-6">
-                  <div className="card">
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <p className="text-sm text-gray-400">Your Stats</p>
-                        <div className="flex gap-4 mt-1">
-                          <p className="text-blue-500">{wpm} WPM</p>
-                          <p className="text-green-500">{accuracy}% Accuracy</p>
-                          <p className="text-purple-500">{progress}% Complete</p>
+                <div className="grid grid-cols-12 gap-6">
+                  {/* Left Sidebar - Current User Stats */}
+                  <div className="col-span-3">
+                    <div className="card bg-gray-900/50 p-4 sticky top-24">
+                      <div className="flex items-center gap-4 mb-4">
+                        <UserIcon className="h-8 w-8 text-yellow-500" />
+                        <div>
+                          <p className="font-semibold text-lg">{user?.username}</p>
+                          <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">You</span>
                         </div>
                       </div>
-                      {gameStatus === 'completed' && (
-                        <div className="text-center">
-                          <p className="text-xl font-bold text-gradient">Race Complete!</p>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-400">WPM</p>
+                          <p className="text-2xl font-bold text-yellow-400">{wpm}</p>
                         </div>
-                      )}
+                        <div>
+                          <p className="text-sm text-gray-400">Accuracy</p>
+                          <p className="text-2xl font-bold text-green-400">{accuracy}%</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Progress</p>
+                          <div className="w-full bg-gray-700 rounded-full h-2.5 mt-2">
+                            <div
+                              className="h-2.5 rounded-full transition-all duration-300 ease-in-out bg-yellow-500"
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-lg text-gray-300 mb-4 leading-relaxed font-mono">{text}</p>
                   </div>
 
-                  <textarea
-                    value={input}
-                    onChange={handleInputChange}
-                    disabled={gameStatus === 'completed'}
-                    className="w-full h-32 bg-gray-800 text-white border border-gray-700 rounded-lg p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-lg"
-                    placeholder="Start typing when the race begins..."
-                  />
+                  {/* Center - Typing Area */}
+                  <div className="col-span-6">
+                    <div className="card mb-8 p-8 backdrop-blur-sm bg-gray-800/50">
+                      <p className="text-xl text-gray-300 mb-6 leading-relaxed font-mono">{text}</p>
+                    </div>
+                    <div className="relative">
+                      <textarea
+                        value={input}
+                        onChange={handleInputChange}
+                        disabled={gameStatus === 'completed'}
+                        className="w-full h-40 bg-gray-800/80 text-white border border-gray-700 rounded-xl p-6 font-mono text-lg leading-relaxed focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                        placeholder="Start typing..."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Sidebar - All Participants */}
+                  <div className="col-span-3">
+                    <div className="card bg-gray-900/50 p-4 sticky top-24 space-y-4">
+                      <h3 className="text-lg font-semibold mb-2">Race Rankings</h3>
+                      {/* Players List */}
+                      <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto">
+                        {participants.map((participant, index) => {
+                          const isCurrentUser = participant.socketId === socket?.id;
+                          return (
+                            <div 
+                              key={participant.socketId} 
+                              className={`relative p-4 rounded-lg transition-all ${isCurrentUser ? 'bg-yellow-500/10 border border-yellow-500/20' : 'bg-gray-800/50'}`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="relative flex-shrink-0">
+                                  <UserIcon className={`h-8 w-8 ${isCurrentUser ? 'text-yellow-500' : 'text-blue-500'}`} />
+                                  <span className="absolute -top-2 -left-2 bg-gray-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                                    {index + 1}
+                                  </span>
+                                </div>
+                                <div className="flex-grow min-w-0">
+                                  <div className="flex items-center justify-between gap-2 mb-2">
+                                    <p className="font-semibold text-lg truncate">
+                                      {participant.username}
+                                      {isCurrentUser && (
+                                        <span className="ml-2 text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">You</span>
+                                      )}
+                                    </p>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <p className="text-sm text-gray-400">WPM</p>
+                                      <p className="text-lg font-semibold">{participant.wpm || 0}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-gray-400">Accuracy</p>
+                                      <p className="text-lg font-semibold">{participant.accuracy || 0}%</p>
+                                    </div>
+                                  </div>
+                                  <div className="mt-2">
+                                    <div className="w-full bg-gray-700 rounded-full h-2">
+                                      <div
+                                        className={`h-2 rounded-full transition-all duration-300 ease-in-out ${isCurrentUser ? 'bg-yellow-500' : 'bg-blue-500'}`}
+                                        style={{ width: `${participant.progress || 0}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {error && (
+                <div className="rounded-md bg-red-900/50 p-4 border border-red-800 mt-4">
+                  <p className="text-sm text-red-400">{error}</p>
                 </div>
               )}
             </div>
