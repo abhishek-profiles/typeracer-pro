@@ -125,10 +125,7 @@ export default function Multiplayer() {
         setParticipants(newParticipants);
         if (roomCode) setRoomCode(roomCode);
       },
-      roomReady: () => {
-        setGameStatus('ready');
-        setError('');
-      },
+
       countdown: (count) => {
         setCountdown(count);
         setGameStatus('countdown');
@@ -155,10 +152,8 @@ export default function Multiplayer() {
         // Reset game state
         setStartTime(null);
       },
-      roomError: (error) => {
-        setError(error);
-        setShowJoinForm(true);
-        setRoom(null);
+      roomError: ({ message }) => {
+        setError(message);
       },
       userLeft: ({ participants: updatedParticipants }) => {
         setParticipants(updatedParticipants);
@@ -346,8 +341,13 @@ export default function Multiplayer() {
   };
 
   const readyToStart = () => {
-    if (!socket || !room) return;
-    socket.emit('playerReady', room);
+    if (!socket || !room) {
+      console.error('Cannot start game: socket or room is not initialized');
+      setError('Cannot start game. Please try rejoining the room.');
+      return;
+    }
+    console.log('Attempting to start game for room:', room);
+    socket.emit('startGame', room);
   };
 
   return (
@@ -428,11 +428,7 @@ export default function Multiplayer() {
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <p className="font-semibold text-lg">{participant.username}</p>
-                          {gameStatus === 'ready' && (
-                            <span className="text-sm px-2 py-1 rounded-full bg-gray-700 text-gray-300">
-                              Waiting
-                            </span>
-                          )}
+
                         </div>
                         {(gameStatus === 'active' || gameStatus === 'completed') && (
                           <>
@@ -453,10 +449,10 @@ export default function Multiplayer() {
                 ))}
               </div>
 
-              {gameStatus === 'ready' && (
+              {gameStatus === 'waiting' && participants.length >= 2 && participants[0]?.socketId === socket?.id && (
                 <div className="text-center">
                   <button onClick={readyToStart} className="btn-primary">
-                    Ready
+                    Start Game
                   </button>
                 </div>
               )}

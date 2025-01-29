@@ -355,35 +355,35 @@ io.on('connection', async (socket) => {
       }
     });
 
-    // Handle ready state
-    socket.on('playerReady', async (roomId) => {
+    // Handle game start
+    socket.on('startGame', async (roomId) => {
       const room = await Room.findOne({ roomId });
-      if (!room) return;
-
-      const participant = room.participants.find(p => p.socketId === socket.id);
-      if (participant) {
-        participant.ready = true;
-        await room.save();
-
-        // Check if all participants are ready
-        const allReady = room.participants.every(p => p.ready);
-        if (allReady) {
-          // Start countdown
-          let countdown = 3;
-          const timer = setInterval(() => {
-            if (countdown > 0) {
-              io.to(roomId).emit('countdown', countdown);
-              countdown--;
-            } else {
-              clearInterval(timer);
-              room.status = 'active';
-              room.startTime = new Date();
-              room.save();
-              io.to(roomId).emit('gameStart', { text: room.text });
-            }
-          }, 1000);
-        }
+      if (!room) {
+        socket.emit('roomError', { message: 'Room not found', code: 'ROOM_NOT_FOUND' });
+        return;
       }
+
+      // Check if the socket belongs to room creator (first participant)
+      const isCreator = room.participants[0]?.socketId === socket.id;
+      if (!isCreator) {
+        socket.emit('roomError', { message: 'Only room creator can start the game', code: 'NOT_CREATOR' });
+        return;
+      }
+
+      // Start countdown
+      let countdown = 3;
+      const timer = setInterval(() => {
+        if (countdown > 0) {
+          io.to(roomId).emit('countdown', countdown);
+          countdown--;
+        } else {
+          clearInterval(timer);
+          room.status = 'active';
+          room.startTime = new Date();
+          room.save();
+          io.to(roomId).emit('gameStart', { text: room.text });
+        }
+      }, 1000);
     });
 
     // Handle disconnect
