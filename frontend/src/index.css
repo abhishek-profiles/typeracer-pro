@@ -18,7 +18,7 @@
   }
   
   .card {
-    @apply bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition;
+    @apply bg-gray-800 rounded-lg p-8 hover:bg-gray-700 transition-all duration-300 border border-gray-800 hover:border-gray-600 h-full flex flex-col items-start;
   }
 }
 

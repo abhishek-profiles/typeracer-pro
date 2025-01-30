@@ -130,7 +130,7 @@ export default function App() {
               <div className="py-24 sm:py-32 lg:pb-40">
                 <div className="mx-auto max-w-7xl px-6 lg:px-8">
                   <div className="mx-auto max-w-2xl text-center">
-                    <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-gradient">
+                    <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-gradient mb-8">
                       Test Your Typing Speed
                     </h1>
                     <p className="mt-6 text-lg leading-8 text-gray-300">
@@ -146,32 +146,26 @@ export default function App() {
                     </div>
                   </div>
                 
-                  <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-3">
-                    <div className="card hover:border-blue-500/50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <ChartBarIcon className="h-8 w-8 text-blue-500" />
-                        <div>
-                          <h3 className="text-lg font-semibold">Track Progress</h3>
-                          <p className="text-sm text-gray-400">Monitor your typing speed and accuracy improvements over time</p>
-                        </div>
+                  <div className="mt-20 grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-12">
+                    <div className="card flex flex-col items-start p-8 border border-gray-800">
+                      <ChartBarIcon className="h-10 w-10 text-blue-500 mb-4" />
+                      <div>
+                        <h3 className="text-xl font-semibold mb-2">Track Progress</h3>
+                        <p className="text-gray-400">Monitor your typing speed and accuracy improvements over time</p>
                       </div>
                     </div>
-                    <div className="card hover:border-blue-500/50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <TrophyIcon className="h-8 w-8 text-blue-500" />
-                        <div>
-                          <h3 className="text-lg font-semibold">Compete Globally</h3>
-                          <p className="text-sm text-gray-400">Join the leaderboard and race against typists worldwide</p>
-                        </div>
+                    <div className="card flex flex-col items-start p-8 border border-gray-800">
+                      <TrophyIcon className="h-10 w-10 text-blue-500 mb-4" />
+                      <div>
+                        <h3 className="text-xl font-semibold mb-2">Compete Globally</h3>
+                        <p className="text-gray-400">Join the leaderboard and race against typists worldwide</p>
                       </div>
                     </div>
-                    <div className="card hover:border-blue-500/50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <UserIcon className="h-8 w-8 text-blue-500" />
-                        <div>
-                          <h3 className="text-lg font-semibold">Real-time Races</h3>
-                          <p className="text-sm text-gray-400">Challenge friends in multiplayer typing competitions</p>
-                        </div>
+                    <div className="card flex flex-col items-start p-8 border border-gray-800">
+                      <UserIcon className="h-10 w-10 text-blue-500 mb-4" />
+                      <div>
+                        <h3 className="text-xl font-semibold mb-2">Real-time Races</h3>
+                        <p className="text-gray-400">Challenge friends in multiplayer typing competitions</p>
                       </div>
                     </div>
                   </div>
