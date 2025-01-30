@@ -36,6 +36,22 @@
   .card {
     @apply bg-gray-800 rounded-lg p-8 hover:bg-gray-700 transition-all duration-300 border border-gray-800 hover:border-gray-600 h-full flex flex-col items-start;
   }
+
+  .text-display-area {
+    @apply bg-gray-900/80 rounded-lg p-6 border border-gray-700 shadow-lg mb-6 text-lg text-gray-300 relative;
+  }
+  
+  .text-display-area::before {
+    @apply content-[""] absolute -inset-0.5 rounded-lg bg-gradient-to-r from-blue-500/20 to-teal-400/20 opacity-0 transition-opacity duration-300;
+  }
+  
+  .text-display-area:hover::before {
+    @apply opacity-100;
+  }
+  
+  .typing-input-area {
+    @apply bg-gray-800/90 rounded-lg p-4 border-2 border-blue-500/30 text-lg text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-200 shadow-lg;
+  }
 }
 
 @layer utilities {

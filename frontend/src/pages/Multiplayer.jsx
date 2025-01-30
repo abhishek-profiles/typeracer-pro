@@ -454,7 +454,7 @@ export default function Multiplayer() {
             </div>
           ) : (
             <div className="space-y-8">
-              {roomCode && (
+              {roomCode && gameStatus === 'waiting' && (
                 <div className="text-center mb-4">
                   <p className="text-gray-300">Room Code: <span className="font-mono font-bold text-blue-500">{roomCode}</span></p>
                   <p className="text-sm text-gray-400">Share this code with others to join the race</p>
@@ -462,16 +462,16 @@ export default function Multiplayer() {
               )}
 
               {gameStatus === 'waiting' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[600px] overflow-y-auto p-4 bg-gray-800/30 rounded-lg">
                   {participants.map((participant) => (
-                    <div key={participant.socketId} className="card hover:border-blue-500/50 transition-all">
+                    <div key={participant.socketId} className="card hover:border-blue-500/50 transition-all flex-shrink-0">
                       <div className="flex items-center gap-4">
-                        <UserIcon className={`h-8 w-8 ${participant.socketId === socket?.id ? 'text-yellow-500' : 'text-blue-500'}`} />
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <p className="font-semibold text-lg">{participant.username}</p>
+                        <UserIcon className={`h-8 w-8 flex-shrink-0 ${participant.socketId === socket?.id ? 'text-yellow-500' : 'text-blue-500'}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-semibold text-lg truncate">{participant.username}</p>
                             {participant.socketId === socket?.id && (
-                              <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">You</span>
+                              <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full flex-shrink-0">You</span>
                             )}
                           </div>
                         </div>
@@ -497,108 +497,74 @@ export default function Multiplayer() {
               )}
 
               {(gameStatus === 'active' || gameStatus === 'completed') && (
-                <div className="grid grid-cols-12 gap-6">
+                <div className="grid grid-cols-[250px_1fr_250px] xl:grid-cols-[300px_1fr_300px] gap-4 lg:gap-6 max-w-[1440px] mx-auto h-[calc(100vh-300px)] items-center">
                   {/* Left Sidebar - Current User Stats */}
-                  <div className="col-span-3">
-                    <div className="card bg-gray-900/50 p-4 sticky top-24">
-                      <div className="flex items-center gap-4 mb-4">
-                        <UserIcon className="h-8 w-8 text-yellow-500" />
-                        <div>
-                          <p className="font-semibold text-lg">{user?.username}</p>
-                          <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">You</span>
-                        </div>
+                  <div className="bg-gray-800/50 p-4 lg:p-6 rounded-lg border border-gray-700 h-full sticky top-24 max-h-[calc(100vh-96px)] overflow-y-auto">
+                    <h3 className="text-lg font-semibold mb-4">Your Stats</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm text-gray-400">WPM</p>
+                        <p className="text-2xl font-bold text-green-400">{wpm}</p>
                       </div>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-gray-400">WPM</p>
-                          <p className="text-2xl font-bold text-yellow-400">{wpm}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-400">Accuracy</p>
-                          <p className="text-2xl font-bold text-green-400">{accuracy}%</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-400">Progress</p>
-                          <div className="w-full bg-gray-700 rounded-full h-2.5 mt-2">
-                            <div
-                              className="h-2.5 rounded-full transition-all duration-300 ease-in-out bg-yellow-500"
-                              style={{ width: `${progress}%` }}
-                            />
-                          </div>
-                        </div>
+                      <div>
+                        <p className="text-sm text-gray-400">Accuracy</p>
+                        <p className="text-2xl font-bold text-blue-400">{accuracy}%</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400">Progress</p>
+                        <p className="text-2xl font-bold text-yellow-400">{progress}%</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Center - Typing Area */}
-                  <div className="col-span-6">
-                    <div className="card mb-8 p-8 backdrop-blur-sm bg-gray-800/50">
-                      <p className="text-xl text-gray-300 mb-6 leading-relaxed font-mono">{text}</p>
+                  <div className="space-y-6 lg:space-y-8 min-w-0">
+                    <div className="bg-gray-800/50 p-4 lg:p-6 rounded-lg border border-gray-700">
+                      <p className="text-lg leading-relaxed whitespace-pre-wrap font-mono break-words">{text}</p>
                     </div>
-                    <div className="relative">
+                    <div>
                       <textarea
                         value={input}
                         onChange={handleInputChange}
                         disabled={gameStatus === 'completed'}
-                        className="w-full h-40 bg-gray-800/80 text-white border border-gray-700 rounded-xl p-6 font-mono text-lg leading-relaxed focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                        placeholder="Start typing..."
+                        className="w-full h-32 bg-gray-800/50 rounded-lg border border-gray-700 p-4 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                        placeholder={gameStatus === 'completed' ? 'Game completed!' : 'Start typing...'}
                       />
                     </div>
                   </div>
 
-                  {/* Right Sidebar - All Participants */}
-                  <div className="col-span-3">
-                    <div className="card bg-gray-900/50 p-4 sticky top-24 space-y-4">
-                      <h3 className="text-lg font-semibold mb-2">Race Rankings</h3>
-                      {/* Players List */}
-                      <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto">
-                        {participants.map((participant, index) => {
-                          const isCurrentUser = participant.socketId === socket?.id;
-                          return (
-                            <div 
-                              key={participant.socketId} 
-                              className={`relative p-4 rounded-lg transition-all ${isCurrentUser ? 'bg-yellow-500/10 border border-yellow-500/20' : 'bg-gray-800/50'}`}
-                            >
-                              <div className="flex items-center gap-4">
-                                <div className="relative flex-shrink-0">
-                                  <UserIcon className={`h-8 w-8 ${isCurrentUser ? 'text-yellow-500' : 'text-blue-500'}`} />
-                                  <span className="absolute -top-2 -left-2 bg-gray-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
-                                    {index + 1}
-                                  </span>
-                                </div>
-                                <div className="flex-grow min-w-0">
-                                  <div className="flex items-center justify-between gap-2 mb-2">
-                                    <p className="font-semibold text-lg truncate">
-                                      {participant.username}
-                                      {isCurrentUser && (
-                                        <span className="ml-2 text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">You</span>
-                                      )}
-                                    </p>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <p className="text-sm text-gray-400">WPM</p>
-                                      <p className="text-lg font-semibold">{participant.wpm || 0}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-sm text-gray-400">Accuracy</p>
-                                      <p className="text-lg font-semibold">{participant.accuracy || 0}%</p>
-                                    </div>
-                                  </div>
-                                  <div className="mt-2">
-                                    <div className="w-full bg-gray-700 rounded-full h-2">
-                                      <div
-                                        className={`h-2 rounded-full transition-all duration-300 ease-in-out ${isCurrentUser ? 'bg-yellow-500' : 'bg-blue-500'}`}
-                                        style={{ width: `${participant.progress || 0}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
+                  {/* Right Sidebar - Participants List */}
+                  <div className="bg-gray-800/50 p-4 lg:p-6 rounded-lg border border-gray-700 h-full sticky top-24 max-h-[calc(100vh-96px)] overflow-y-auto">
+                    <h3 className="text-lg font-semibold mb-4">Race Progress</h3>
+                    <div className="space-y-3">
+                      {participants.map((participant, index) => (
+                        <div
+                          key={participant.socketId}
+                          className={`p-3 rounded-lg ${participant.socketId === socket?.id ? 'bg-blue-500/20 border border-blue-500/50' : 'bg-gray-700/50 border border-gray-600/50'}`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-semibold flex-shrink-0">{index + 1}</span>
+                              <span className="font-medium truncate">{participant.username}</span>
                             </div>
-                          );
-                        })}
-                      </div>
+                            {participant.socketId === socket?.id && (
+                              <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full flex-shrink-0">You</span>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <div className="w-full bg-gray-700 rounded-full h-2">
+                              <div
+                                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${participant.progress || 0}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-sm text-gray-400">
+                              <span>{participant.wpm || 0} WPM</span>
+                              <span>{participant.accuracy || 0}% ACC</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
