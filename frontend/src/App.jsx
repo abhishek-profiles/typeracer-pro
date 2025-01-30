@@ -23,33 +23,46 @@ export default function App() {
 
   return (
     <div className="bg-gray-900 text-white min-h-screen w-full">
-      <header className="absolute inset-x-0 top-0 z-50 w-full">
-        <nav className="flex items-center justify-between p-6 lg:px-8 max-w-full" aria-label="Global">
-          <div className="flex lg:flex-1">
-            <Link to="/" className="-m-1.5 p-1.5">
-              <span className="text-2xl font-bold text-gradient">TypeRacer Pro</span>
+      <header className="absolute inset-x-0 top-0 z-50 w-full bg-gray-900/95 backdrop-blur-sm">
+        <nav className="nav-container" aria-label="Global">
+          <div className="flex items-center gap-4">
+            <Link to="/" className="nav-logo">
+              TypeRacer Pro
             </Link>
           </div>
           <div className="flex lg:hidden">
             <button
               type="button"
-              className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-400"
+              className="rounded-md p-2 text-gray-400 hover:text-white hover:bg-gray-800"
               onClick={() => setMobileMenuOpen(true)}
             >
               <Bars3Icon className="h-6 w-6" aria-hidden="true" />
             </button>
           </div>
-          <div className="hidden lg:flex lg:gap-x-12">
+          <div className="nav-menu">
             {navigation.map((item) => (
               <Link key={item.name} to={item.href} className="nav-link">
                 {item.name}
               </Link>
             ))}
           </div>
-          <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
+          <div className="hidden lg:flex lg:items-center lg:gap-x-6">
             {user ? (
               <>
-                <span className="nav-link">{user.username}</span>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-gray-700 overflow-hidden">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.username}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <UserIcon className="h-full w-full p-1.5 text-gray-400" />
+                    )}
+                  </div>
+                  <span className="nav-link">{user.username}</span>
+                </div>
                 <button onClick={logout} className="nav-link">
                   Log out
                 </button>

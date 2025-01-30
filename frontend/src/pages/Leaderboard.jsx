@@ -7,6 +7,40 @@ const API_URL = import.meta.env.VITE_API_URL;
 export default function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sortConfig, setSortConfig] = useState({ key: 'highScore.wpm', direction: 'desc' });
+
+  const handleSort = (key) => {
+    setSortConfig(prevConfig => ({
+      key,
+      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const getSortedLeaderboard = () => {
+    if (!leaderboard) return [];
+    
+    return [...leaderboard].sort((a, b) => {
+      const direction = sortConfig.direction === 'asc' ? 1 : -1;
+      
+      if (sortConfig.key === 'username') {
+        return direction * a.username.localeCompare(b.username);
+      }
+      
+      if (sortConfig.key === 'highScore.wpm') {
+        return direction * ((a.highScore?.wpm || 0) - (b.highScore?.wpm || 0));
+      }
+      
+      if (sortConfig.key === 'stats.averageWPM') {
+        return direction * ((a.stats?.averageWPM || 0) - (b.stats?.averageWPM || 0));
+      }
+      
+      if (sortConfig.key === 'typingHistory.length') {
+        return direction * ((a.typingHistory?.length || 0) - (b.typingHistory?.length || 0));
+      }
+      
+      return 0;
+    });
+  };
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -44,25 +78,27 @@ export default function Leaderboard() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="text-left border-b border-gray-700">
+                  <tr className="text-left border-b border-gray-700 bg-gray-800/50">
                     <th className="py-3 px-4">Rank</th>
-                    <th className="py-3 px-4">Username</th>
-                    <th className="py-3 px-4">Best WPM</th>
-                    <th className="py-3 px-4">Average WPM</th>
-                    <th className="py-3 px-4">Tests Completed</th>
+                    <th className="py-3 px-4 cursor-pointer hover:bg-gray-800/80" onClick={() => handleSort('username')}>Username {sortConfig.key === 'username' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                    <th className="py-3 px-4 cursor-pointer hover:bg-gray-800/80" onClick={() => handleSort('highScore.wpm')}>Best WPM {sortConfig.key === 'highScore.wpm' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                    <th className="py-3 px-4 cursor-pointer hover:bg-gray-800/80" onClick={() => handleSort('stats.averageWPM')}>Average WPM {sortConfig.key === 'stats.averageWPM' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                    <th className="py-3 px-4 cursor-pointer hover:bg-gray-800/80" onClick={() => handleSort('typingHistory.length')}>Tests Completed {sortConfig.key === 'typingHistory.length' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {leaderboard.map((user, index) => (
-                    <tr key={user._id} className="border-b border-gray-800">
+                  {getSortedLeaderboard().map((user, index) => (
+                    <tr key={user._id} className="border-b border-gray-800 hover:bg-gray-800/30 transition-colors duration-200">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
-                          {index < 3 && <TrophyIcon className="h-5 w-5 text-yellow-500" />}
-                          {index + 1}
+                          {index === 0 && <TrophyIcon className="h-5 w-5 text-yellow-500" />}
+                          {index === 1 && <TrophyIcon className="h-5 w-5 text-gray-400" />}
+                          {index === 2 && <TrophyIcon className="h-5 w-5 text-amber-600" />}
+                          <span className={`font-semibold ${index < 3 ? 'text-blue-400' : ''}`}>{index + 1}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4">{user.username}</td>
-                      <td className="py-3 px-4">{user.highScore?.wpm || 0}</td>
+                      <td className="py-3 px-4 font-medium">{user.username}</td>
+                      <td className="py-3 px-4 font-semibold text-green-400">{user.highScore?.wpm || 0}</td>
                       <td className="py-3 px-4">{user.stats?.averageWPM || 0}</td>
                       <td className="py-3 px-4">{user.typingHistory?.length || 0}</td>
                     </tr>

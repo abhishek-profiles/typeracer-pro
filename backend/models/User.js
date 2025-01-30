@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 6
   },
+  avatar: {
+    type: String,
+    default: null
+  },
   typingHistory: [{
     wpm: Number,
     accuracy: Number,
@@ -56,11 +60,4 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Method to compare password for login
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
-
-const User = mongoose.model('User', userSchema);
-
-module.exports = User;
+module.exports = mongoose.model('User', userSchema);
