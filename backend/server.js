@@ -498,6 +498,6 @@ if (process.env.NODE_ENV === 'production') {
 
 // Start the server
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+const mainServer = app.listen(port, () => {
+  console.log(`Main server running on port ${port}`);
 });
