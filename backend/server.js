@@ -60,7 +60,7 @@ server.listen(socketPort, () => {
 app.use(cors({
   origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Origin'],
   credentials: true,
   exposedHeaders: ['Access-Control-Allow-Origin', 'Authorization'],
   maxAge: 86400
@@ -75,7 +75,7 @@ app.use(express.json());
 // Socket.IO setup with enhanced security and connection management
 const io = socketIO(server, {
   cors: {
-    origin: ['https://typeracer-pro.vercel.app', 'http://localhost:5173'],
+    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
     methods: ['GET', 'POST', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -102,7 +102,7 @@ const io = socketIO(server, {
   upgrade: true,
   handlePreflightRequest: (req, res) => {
     res.writeHead(200, {
-      'Access-Control-Allow-Origin': 'https://typeracer-pro.vercel.app',
+      'Access-Control-Allow-Origin': process.env.CORS_ORIGIN || 'http://localhost:5173',
       'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Allow-Credentials': true
