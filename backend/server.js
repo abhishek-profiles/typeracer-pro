@@ -480,21 +480,10 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });
 });
 
-// Serve static assets in production
-if (process.env.NODE_ENV === 'production') {
-  // Serve static files
-  app.use(express.static(path.join(__dirname, '../frontend/dist')));
-  
-  // Handle all other routes by serving index.html
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend/dist/index.html'));
-  });
-} else {
-  // Development 404 handler
-  app.use('*', (req, res) => {
-    res.status(404).send('Not Found');
-  });
-}
+// Development 404 handler for all other routes
+app.use('*', (req, res) => {
+  res.status(404).json({ error: 'Not Found' });
+});
 
 // Start the server
 const port = process.env.PORT || 3000;
