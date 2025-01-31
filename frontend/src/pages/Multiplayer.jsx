@@ -5,7 +5,7 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
-import { UserIcon } from '@heroicons/react/24/solid';
+import { UserIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/solid';
 
 export default function Multiplayer() {
   const { user, getToken } = useAuth();
@@ -23,6 +23,8 @@ export default function Multiplayer() {
   const [progress, setProgress] = useState(0);
   const [wpm, setWPM] = useState(0);
   const [accuracy, setAccuracy] = useState(100);
+  const [copied, setCopied] = useState(false);
+  const [validationStatus, setValidationStatus] = useState({ type: '', message: '' });
 
   const initializeSocket = async () => {
     if (!user?._id) {
@@ -248,30 +250,38 @@ export default function Multiplayer() {
     }
   };
 
+  const copyRoomCode = async () => {
+    try {
+      await navigator.clipboard.writeText(roomCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy room code:', err);
+    }
+  };
+
   const joinRoom = async (e) => {
     e.preventDefault();
     if (!user) {
-      setError('You must be logged in to join a room');
+      setValidationStatus({ type: 'error', message: 'You must be logged in to join a room' });
       return;
     }
     
     if (!roomCode || roomCode.trim().length !== 5) {
-      setError('Please enter a valid 5-digit room code.');
+      setValidationStatus({ type: 'error', message: 'Please enter a valid 5-digit room code.' });
       return;
     }
 
     let socketInstance = null;
     try {
-      setError('Validating room...');
+      setValidationStatus({ type: 'info', message: 'Validating room...' });
       
-      // Get fresh token and verify it's valid
       const token = await getToken();
       if (!token) {
-        setError('Authentication failed. Please log in again.');
+        setValidationStatus({ type: 'error', message: 'Authentication failed. Please log in again.' });
         return;
       }
 
-      // Validate room first before socket connection
       const validateResponse = await axios.post(`${API_URL}/api/rooms/validate`, { 
         roomCode: roomCode.trim(),
         userId: user._id
@@ -283,32 +293,30 @@ export default function Multiplayer() {
       });
 
       if (!validateResponse.data.valid) {
-        setError(validateResponse.data.error || 'Room is not available');
+        setValidationStatus({ type: 'error', message: validateResponse.data.error || 'Room is not available' });
         return;
       }
 
-      // Initialize socket connection after room validation
       socketInstance = await initializeSocket();
       if (!socketInstance) {
-        setError('Failed to establish connection. Please try again.');
+        setValidationStatus({ type: 'error', message: 'Failed to establish connection. Please try again.' });
         return;
       }
 
-      // Connect socket and wait for successful connection
       socketInstance.connect();
       setSocket(socketInstance);
 
-      // Join the room after successful socket connection
       socketInstance.emit('joinRoom', {
         roomId: validateResponse.data.roomId,
         userId: user._id,
         username: user.username
       });
       setRoom(validateResponse.data.roomId);
+      setValidationStatus({ type: 'success', message: 'Successfully joined the room!' });
       return socketInstance;
     } catch (error) {
       console.error('Socket initialization error:', error);
-      setError('Failed to establish connection. Please try again.');
+      setValidationStatus({ type: 'error', message: 'Failed to establish connection. Please try again.' });
       return null;
     }
   };
@@ -405,47 +413,77 @@ export default function Multiplayer() {
           </div>
 
           {!room ? (
-            <div className="space-y-8">
-              {error && (
-                <div className="rounded-md bg-red-900/50 p-4 border border-red-800">
-                  <p className="text-sm text-red-400">{error}</p>
+            <div className="max-w-xl mx-auto space-y-8">
+              {validationStatus.message && (
+                <div className={`rounded-lg p-4 border shadow-lg transform transition-all duration-300 ${validationStatus.type === 'error' ? 'bg-red-900/30 border-red-800/50 text-red-400' : validationStatus.type === 'success' ? 'bg-green-900/30 border-green-800/50 text-green-400' : 'bg-blue-900/30 border-blue-800/50 text-blue-400'}`}>
+                  <p className="text-sm font-medium">{validationStatus.message}</p>
                 </div>
               )}
 
               {!showJoinForm ? (
-                <div className="flex justify-center space-x-4">
-                  <button onClick={() => setShowJoinForm(true)} className="btn-primary">
-                    Join Match
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <button
+                    onClick={() => setShowJoinForm(true)}
+                    className="group relative overflow-hidden rounded-lg bg-gray-800/50 p-6 text-left shadow-lg ring-1 ring-gray-700/50 transition-all duration-300 hover:bg-gray-800/80 hover:ring-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <div className="flex flex-col items-center space-y-4">
+                      <UserIcon className="h-12 w-12 text-blue-500 transition-transform duration-300 group-hover:scale-110" />
+                      <div className="text-center">
+                        <h3 className="text-lg font-semibold text-gradient">Join Match</h3>
+                        <p className="mt-2 text-sm text-gray-400">Enter a room code to join an existing match</p>
+                      </div>
+                    </div>
                   </button>
-                  <button onClick={createRoom} className="btn-primary">
-                    Create Match
+
+                  <button
+                    onClick={createRoom}
+                    className="group relative overflow-hidden rounded-lg bg-gray-800/50 p-6 text-left shadow-lg ring-1 ring-gray-700/50 transition-all duration-300 hover:bg-gray-800/80 hover:ring-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <div className="flex flex-col items-center space-y-4">
+                      <ClipboardDocumentIcon className="h-12 w-12 text-blue-500 transition-transform duration-300 group-hover:scale-110" />
+                      <div className="text-center">
+                        <h3 className="text-lg font-semibold text-gradient">Create Match</h3>
+                        <p className="mt-2 text-sm text-gray-400">Start a new match and invite others</p>
+                      </div>
+                    </div>
                   </button>
                 </div>
               ) : (
-                <div className="max-w-md mx-auto">
-                  <form onSubmit={joinRoom} className="space-y-4">
+                <div className="rounded-lg bg-gray-800/30 p-6 shadow-lg ring-1 ring-gray-700/50">
+                  <form onSubmit={joinRoom} className="space-y-6">
                     <div>
                       <label htmlFor="roomCode" className="block text-sm font-medium text-gray-300">
-                        Enter 5-digit Room Code
+                        Room Code
                       </label>
-                      <input
-                        type="text"
-                        id="roomCode"
-                        value={roomCode}
-                        onChange={(e) => setRoomCode(e.target.value)}
-                        placeholder="Enter room code"
-                        className="mt-1 block w-full rounded-md bg-gray-800 border border-gray-700 text-white px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        maxLength={5}
-                        pattern="[0-9]{5}"
-                        required
-                      />
+                      <div className="mt-2">
+                        <input
+                          type="text"
+                          id="roomCode"
+                          value={roomCode}
+                          onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                          placeholder="Enter 5-digit code"
+                          className="block w-full rounded-lg bg-gray-900/50 border border-gray-700 px-4 py-3 text-white placeholder-gray-500 shadow-sm transition-colors duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                          maxLength={5}
+                          pattern="[0-9]{5}"
+                          required
+                        />
+                      </div>
+                      <p className="mt-2 text-sm text-gray-400">Enter the 5-digit code shared by the match creator</p>
                     </div>
-                    <div className="flex justify-center space-x-4">
-                      <button type="button" onClick={() => setShowJoinForm(false)} className="btn-secondary">
+
+                    <div className="flex items-center justify-end space-x-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowJoinForm(false)}
+                        className="rounded-lg bg-gray-700/50 px-4 py-2 text-sm font-medium text-gray-300 shadow-sm transition-colors duration-200 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-offset-2 focus:ring-offset-gray-900"
+                      >
                         Back
                       </button>
-                      <button type="submit" className="btn-primary">
-                        Join
+                      <button
+                        type="submit"
+                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors duration-200 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                      >
+                        Join Match
                       </button>
                     </div>
                   </form>
@@ -455,9 +493,25 @@ export default function Multiplayer() {
           ) : (
             <div className="space-y-8">
               {roomCode && gameStatus === 'waiting' && (
-                <div className="text-center mb-4">
-                  <p className="text-gray-300">Room Code: <span className="font-mono font-bold text-blue-500">{roomCode}</span></p>
-                  <p className="text-sm text-gray-400">Share this code with others to join the race</p>
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center gap-4 bg-gray-800/50 rounded-lg px-6 py-4 shadow-lg ring-1 ring-gray-700/50">
+                    <div className="flex flex-col items-center">
+                      <p className="text-sm text-gray-400 mb-1">Room Code</p>
+                      <p className="font-mono text-2xl font-bold text-gradient tracking-wider">{roomCode}</p>
+                    </div>
+                    <button
+                      onClick={copyRoomCode}
+                      className="group relative rounded-lg bg-gray-700/50 p-2 transition-all duration-300 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      title="Copy room code"
+                    >
+                      {copied ? (
+                        <CheckIcon className="h-5 w-5 text-green-500 transition-all duration-300 group-hover:scale-110" />
+                      ) : (
+                        <ClipboardDocumentIcon className="h-5 w-5 text-blue-500 transition-all duration-300 group-hover:scale-110" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="mt-4 text-sm text-gray-400">Share this code with others to join your match</p>
                 </div>
               )}
 
@@ -469,7 +523,7 @@ export default function Multiplayer() {
                         <UserIcon className={`h-8 w-8 flex-shrink-0 ${participant.socketId === socket?.id ? 'text-yellow-500' : 'text-blue-500'}`} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <p className="font-semibold text-lg truncate">{participant.username}</p>
+                            <p className="font-semibold text-lg truncate">{participant.userId?.username || 'Anonymous'}</p>
                             {participant.socketId === socket?.id && (
                               <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full flex-shrink-0">You</span>
                             )}
@@ -544,24 +598,22 @@ export default function Multiplayer() {
                         >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2 min-w-0">
-                              <span className="font-semibold flex-shrink-0">{index + 1}</span>
-                              <span className="font-medium truncate">{participant.username}</span>
+                              <span className="text-sm font-medium truncate">{participant.userId?.username || 'Anonymous'}</span>
+                              {participant.socketId === socket?.id && (
+                                <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full flex-shrink-0">You</span>
+                              )}
                             </div>
-                            {participant.socketId === socket?.id && (
-                              <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full flex-shrink-0">You</span>
-                            )}
+                            <span className="text-sm text-gray-400">{participant.wpm} WPM</span>
                           </div>
-                          <div className="space-y-2">
-                            <div className="w-full bg-gray-700 rounded-full h-2">
-                              <div
-                                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${participant.progress || 0}%` }}
-                              />
-                            </div>
-                            <div className="flex justify-between text-sm text-gray-400">
-                              <span>{participant.wpm || 0} WPM</span>
-                              <span>{participant.accuracy || 0}% ACC</span>
-                            </div>
+                          <div className="relative h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                              className="absolute left-0 top-0 h-full bg-blue-500 transition-all duration-300"
+                              style={{ width: `${participant.progress || 0}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between mt-1">
+                            <span className="text-xs text-gray-400">{participant.progress || 0}%</span>
+                            <span className="text-xs text-gray-400">{participant.accuracy || 0}% acc</span>
                           </div>
                         </div>
                       ))}
@@ -571,8 +623,11 @@ export default function Multiplayer() {
               )}
 
               {error && (
-                <div className="rounded-md bg-red-900/50 p-4 border border-red-800 mt-4">
-                  <p className="text-sm text-red-400">{error}</p>
+                <div className="max-w-2xl mx-auto mb-6">
+                  <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-red-900/30 to-red-800/30 p-4 backdrop-blur-sm ring-1 ring-red-800/50 shadow-lg transform transition-all duration-300">
+                    <div className="absolute inset-0 bg-red-500/5"></div>
+                    <p className="relative text-red-400 font-medium text-center">{error}</p>
+                  </div>
                 </div>
               )}
             </div>
