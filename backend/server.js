@@ -51,9 +51,9 @@ const server = http.createServer(app);
 const socketServer = http.createServer();
 
 // Configure socket server to listen on SOCKET_PORT
-const socketPort = process.env.SOCKET_PORT || 3001;
-socketServer.listen(socketPort, () => {
-  console.log(`Socket server running on port ${socketPort}`);
+const socketPort = process.env.PORT || 3001;
+server.listen(socketPort, () => {
+  console.log(`Server running on port ${socketPort}`);
 });
 
 // Configure CORS
@@ -73,11 +73,12 @@ app.options('*', cors());
 app.use(express.json());
 
 // Socket.IO setup with connection management
-const io = socketIO(socketServer, {
+const io = socketIO(server, {
   cors: {
     origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
     methods: ['GET', 'POST'],
-    credentials: true
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
   },
   path: '/socket.io',
   connectionStateRecovery: {
@@ -87,13 +88,14 @@ const io = socketIO(socketServer, {
   pingTimeout: 60000,
   pingInterval: 25000,
   maxHttpBufferSize: 1e6, // 1 MB
-  transports: ['websocket', 'polling'],  // Allow fallback to polling
+  transports: ['websocket', 'polling'],
   allowUpgrades: true,
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,
-  maxSocketConnections: 100
+  maxSocketConnections: 100,
+  secure: true
 });
 
 // Track active connections with improved state management
