@@ -58,7 +58,7 @@ server.listen(socketPort, () => {
 
 // Configure CORS
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -75,7 +75,7 @@ app.use(express.json());
 // Socket.IO setup with connection management
 const io = socketIO(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
     methods: ['GET', 'POST'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -95,7 +95,11 @@ const io = socketIO(server, {
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,
   maxSocketConnections: 100,
-  secure: true
+  secure: true,
+  rejectUnauthorized: false, // Allow self-signed certificates
+  forceNew: true,
+  timeout: 20000,
+  upgrade: true
 });
 
 // Track active connections with improved state management
