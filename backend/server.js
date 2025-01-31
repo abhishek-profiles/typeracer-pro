@@ -72,11 +72,11 @@ app.options('*', cors());
 // Parse JSON bodies
 app.use(express.json());
 
-// Socket.IO setup with connection management
+// Socket.IO setup with enhanced security and connection management
 const io = socketIO(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
-    methods: ['GET', 'POST'],
+    origin: ['https://typeracer-pro.vercel.app', 'http://localhost:5173'],
+    methods: ['GET', 'POST', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']
   },
@@ -96,10 +96,19 @@ const io = socketIO(server, {
   reconnectionDelayMax: 5000,
   maxSocketConnections: 100,
   secure: true,
-  rejectUnauthorized: false, // Allow self-signed certificates
+  rejectUnauthorized: false,
   forceNew: true,
   timeout: 20000,
-  upgrade: true
+  upgrade: true,
+  handlePreflightRequest: (req, res) => {
+    res.writeHead(200, {
+      'Access-Control-Allow-Origin': 'https://typeracer-pro.vercel.app',
+      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': true
+    });
+    res.end();
+  }
 });
 
 // Track active connections with improved state management
