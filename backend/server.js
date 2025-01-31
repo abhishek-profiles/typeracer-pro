@@ -51,9 +51,9 @@ const server = http.createServer(app);
 const socketServer = http.createServer();
 
 // Configure socket server to listen on SOCKET_PORT
-const socketPort = process.env.PORT || 3001;
+const socketPort = process.env.SOCKET_PORT || 3001;
 server.listen(socketPort, () => {
-  console.log(`Server running on port ${socketPort}`);
+  console.log(`Socket server running on port ${socketPort}`);
 });
 
 // Configure CORS
